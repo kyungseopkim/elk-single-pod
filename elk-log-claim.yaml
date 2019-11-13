@@ -1,0 +1,14 @@
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+   name: elk-log-volume
+spec:
+   storageClassName: aws-efs
+   accessModes:
+       - ReadWriteOnce
+   resources:
+       requests:
+           storage: 20Gi
+
+
