@@ -1,0 +1,71 @@
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elk-log
+  labels:
+    app: elk    
+spec:  
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elk
+  template:
+    metadata:
+      labels:
+        app: elk
+    spec:
+      containers:
+      - name: elasticsearch
+        image: 411026478373.dkr.ecr.us-east-1.amazonaws.com/elasticsearch:7.4.2
+        ports:
+          - containerPort: 9200
+          - containerPort: 9300          
+        volumeMounts:
+          - name: data-storage
+            mountPath: /usr/share/elasticsearch/data
+        env:
+          - name: cluster.name
+            value: elk-log
+          - name: discovery.type
+            value: single-node
+
+      - name: logstash
+        image: 411026478373.dkr.ecr.us-east-1.amazonaws.com/logstash:7.4.2
+        ports:
+          - containerPort: 5000
+          - containerPort: 9600
+        env:
+          - name: elasticsearch.hosts
+            value: "localhost:9200"
+
+          - name: xpack.monitoring.enabled
+            value: "false"
+
+        volumeMounts:
+          - name: logstash-pipeline
+            mountPath: /usr/share/logstash/pipeline
+
+      - name: kibana
+        image: 411026478373.dkr.ecr.us-east-1.amazonaws.com/kibana:7.4.2
+        ports:
+          - containerPort: 5601
+        volumeMounts:
+          - name: elk-config
+            mountPath: /usr/share/kibana/config
+
+      volumes:
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: elk-log-volume
+        - name: logstash-pipeline
+          configMap:
+            name: elk-config
+            items:
+              - key: pipelines.conf
+                path: logstash.conf
+        - name: elk-config
+          configMap: 
+            name: elk-config
+
